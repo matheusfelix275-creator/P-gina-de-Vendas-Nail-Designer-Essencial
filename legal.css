@@ -1,0 +1,21 @@
+@font-face { font-family: "Fraunces"; src: url("assets/Fraunces-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Manrope"; src: url("assets/Manrope-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Manrope"; src: url("assets/Manrope-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+:root { --ivory:#f6f1ea; --paper:#fbf8f3; --plum:#68283e; --clay:#c98f91; --blue:#b8cde0; --ink:#242124; --muted:#6e6665; --line:#ded3ca; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--ivory); font-family: "Manrope", Arial, sans-serif; line-height: 1.7; }
+a { color: var(--plum); }
+.legal-nav { border-bottom: 1px solid var(--line); background: rgba(246,241,234,.95); }
+.legal-nav__inner { display: flex; width: min(920px, calc(100% - 32px)); min-height: 74px; margin: auto; align-items: center; justify-content: space-between; gap: 20px; }
+.legal-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--plum); font-weight: 700; text-decoration: none; }
+.legal-brand img { width: 42px; height: 42px; border-radius: 11px; }
+.legal-main { width: min(920px, calc(100% - 32px)); margin: 46px auto 80px; padding: clamp(26px, 5vw, 60px); border: 1px solid var(--line); border-radius: 28px; background: var(--paper); box-shadow: 0 20px 55px rgba(76,29,46,.08); }
+h1, h2 { color: var(--plum); font-family: "Fraunces", Georgia, serif; line-height: 1.1; }
+h1 { margin: 0 0 16px; font-size: clamp(2.3rem, 6vw, 4.4rem); }
+h2 { margin: 38px 0 10px; font-size: 1.55rem; }
+p, li { color: #4f4847; }
+.legal-note { margin: 24px 0; padding: 18px 20px; border-left: 4px solid var(--clay); border-radius: 0 14px 14px 0; background: #ead0ce; }
+.legal-data { padding: 20px; border-radius: 18px; background: #dfeaf2; }
+.legal-footer { padding: 30px 16px; color: var(--muted); text-align: center; }
+button { padding: 10px 15px; border: 1px solid var(--plum); border-radius: 999px; color: var(--plum); background: transparent; cursor: pointer; font-weight: 700; }
+
