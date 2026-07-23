@@ -60,6 +60,9 @@ import "./config.js";
         return;
       }
       link.href = target;
+      if (typeof pintrk === "function") {
+        pintrk("track", "InitiateCheckout", { value: config.price, currency: config.currency, product_name: config.productName });
+      }
     });
   });
 
