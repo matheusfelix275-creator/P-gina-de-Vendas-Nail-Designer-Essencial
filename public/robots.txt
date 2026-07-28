@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kit-nail-designer-essencial.netlify.app/sitemap.xml
