@@ -17,13 +17,6 @@
   <link rel="preload" as="font" type="font/ttf" crossorigin href="./assets/Fraunces-Bold.ttf">
   <link rel="preload" as="font" type="font/ttf" crossorigin href="./assets/Manrope-Regular.ttf">
   <link rel="stylesheet" href="styles.css">
-  <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "xqqj6j9641");
-  </script>
 </head>
 <body>
   <header class="header" role="banner">
@@ -37,22 +30,6 @@
 
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
-      <!-- Pinterest Tag -->
-<script>
-!function(e){if(!window.pintrk){window.pintrk = function () {
-window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var
-  n=window.pintrk;n.queue=[],n.version="3.0";var
-  t=document.createElement("script");t.async=!0,t.src=e;var
-  r=document.getElementsByTagName("script")[0];
-  r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
-pintrk('load', '2612472718349', {em: '<user_email_address>'});
-pintrk('page');
-</script>
-<noscript>
-<img height="1" width="1" style="display:none;" alt=""
-  src="https://ct.pinterest.com/v3/?event=init&tid=2612472718349&pd[em]=<hashed_email_address>&noscript=1" />
-</noscript>
-<!-- end Pinterest Tag -->
       <div class="container hero__grid">
         <div class="hero__content">
           <p class="hero__eyebrow">KIT DIGITAL PARA NAIL DESIGNERS</p>
@@ -339,6 +316,7 @@ pintrk('page');
         <a href="termos-de-uso.html">Termos de Uso</a>
         <a href="politica-de-privacidade.html">Privacidade</a>
         <a data-support-link href="#">Contato</a>
+        <a href="#" data-consent-preferences>Preferências de privacidade</a>
       </nav>
     </div>
   </footer>
@@ -358,13 +336,24 @@ pintrk('page');
         <div class="lightbox__counter"></div>
       </header>
       <figure class="lightbox__figure">
-        <img id="lightbox-image" src="" alt="">
+        <img id="lightbox-image" alt="">
         <figcaption id="lightbox-caption" class="lightbox__caption"></figcaption>
       </figure>
       <nav class="lightbox__nav" aria-label="Navegação da coleção">
         <button class="lightbox__prev" aria-label="Design anterior"></button>
         <button class="lightbox__next" aria-label="Próximo design"></button>
       </nav>
+    </div>
+  </div>
+
+  <div class="consent-banner" data-consent-banner role="alert" aria-live="polite" hidden>
+    <div class="consent-banner__inner">
+      <p class="consent-banner__text">Podemos usar medição opcional para entender o desempenho desta página e melhorar nossos anúncios. Você pode aceitar ou continuar sem medição.</p>
+      <div class="consent-banner__actions">
+        <button class="btn btn--primary" data-consent-accept>Aceitar medição</button>
+        <button class="btn" data-consent-deny>Continuar sem medição</button>
+        <a href="politica-de-privacidade.html" class="consent-banner__link">Política de Privacidade</a>
+      </div>
     </div>
   </div>
 

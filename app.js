@@ -4,32 +4,107 @@ import "./config.js";
   "use strict";
 
   const config = window.SITE_CONFIG || {};
-  const trackingKeys = [
-    "src",
-    "sck",
-    "utm_source",
-    "utm_medium",
-    "utm_campaign",
-    "utm_term",
-    "utm_content",
-    "s1",
-    "s2",
-    "s3"
+  const STORAGE_KEY = "kn_measurement_consent_v1";
+
+  function getConsent() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "granted") return "granted";
+    if (stored === "denied") return "denied";
+    return null;
+  }
+
+  function setConsent(value) {
+    localStorage.setItem(STORAGE_KEY, value);
+  }
+
+  const banner = document.querySelector("[data-consent-banner]");
+  const acceptBtn = document.querySelector("[data-consent-accept]");
+  const denyBtn = document.querySelector("[data-consent-deny]");
+  const preferencesLink = document.querySelector("[data-consent-preferences]");
+
+  function showBanner() {
+    if (banner) banner.removeAttribute("hidden");
+  }
+
+  function hideBanner() {
+    if (banner) banner.setAttribute("hidden", "");
+  }
+
+  function loadPinterestTag() {
+    if (window.pintrk) return;
+    !function(e){if(!window.pintrk){window.pintrk=function(){window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var n=window.pintrk;n.queue=[],n.version="3.0";var t=document.createElement("script");t.async=!0,t.src=e;var r=document.getElementsByTagName("script")[0];r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
+  }
+
+  function initPinterest() {
+    var tagId = config.pinterestTagId;
+    if (!tagId) return;
+    loadPinterestTag();
+    pintrk("load", tagId);
+    pintrk("page");
+    if (!window._kn_pv) {
+      pintrk("track", "pagevisit");
+      window._kn_pv = true;
+    }
+  }
+
+  var currentConsent = getConsent();
+  if (currentConsent === "granted") {
+    initPinterest();
+    hideBanner();
+  } else if (currentConsent === "denied") {
+    hideBanner();
+  } else {
+    showBanner();
+  }
+
+  if (acceptBtn) {
+    acceptBtn.addEventListener("click", function () {
+      setConsent("granted");
+      hideBanner();
+      initPinterest();
+    });
+  }
+
+  if (denyBtn) {
+    denyBtn.addEventListener("click", function () {
+      setConsent("denied");
+      hideBanner();
+      if (typeof pintrk === "function") {
+        window.location.reload();
+      }
+    });
+  }
+
+  if (preferencesLink) {
+    preferencesLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      currentConsent = getConsent();
+      if (currentConsent === null) {
+        showBanner();
+      } else {
+        showBanner();
+      }
+    });
+  }
+
+  var trackingKeys = [
+    "src", "sck", "utm_source", "utm_medium", "utm_campaign",
+    "utm_term", "utm_content", "s1", "s2", "s3"
   ];
-  const notice = document.querySelector("[data-site-notice]");
-  let noticeTimer;
+  var notice = document.querySelector("[data-site-notice]");
+  var noticeTimer;
 
   function showNotice(message) {
     if (!notice) return;
     notice.textContent = message;
     notice.removeAttribute("hidden");
     window.clearTimeout(noticeTimer);
-    noticeTimer = window.setTimeout(() => notice.setAttribute("hidden", ""), 4200);
+    noticeTimer = window.setTimeout(function () { notice.setAttribute("hidden", ""); }, 4200);
   }
 
   function validCheckoutUrl(value) {
     try {
-      const url = new URL(value);
+      var url = new URL(value);
       return url.protocol === "https:" && (
         url.hostname === "kiwify.com.br" || url.hostname.endsWith(".kiwify.com.br")
       );
@@ -40,59 +115,74 @@ import "./config.js";
 
   function buildCheckoutUrl() {
     if (!validCheckoutUrl(config.checkoutUrl)) return null;
-    const target = new URL(config.checkoutUrl);
-    const current = new URLSearchParams(window.location.search);
-    trackingKeys.forEach((key) => {
-      if (current.has(key)) target.searchParams.set(key, current.get(key));
+    var target = new URL(config.checkoutUrl);
+    var qs = new URLSearchParams(window.location.search);
+    trackingKeys.forEach(function (key) {
+      if (qs.has(key)) target.searchParams.set(key, qs.get(key));
     });
     return target.toString();
   }
 
-  document.querySelectorAll("[data-checkout]").forEach((link) => {
-    const checkoutUrl = buildCheckoutUrl();
+  function fireInitiateCheckout() {
+    if (typeof pintrk !== "function") return;
+    pintrk("track", "initiatecheckout", {
+      value: 49.90,
+      order_quantity: 1,
+      currency: "BRL",
+      line_items: [{
+        product_name: "Kit Nail Designer Essencial",
+        product_id: "kit-nail-designer-essencial",
+        product_price: 49.90,
+        product_quantity: 1
+      }]
+    });
+  }
+
+  document.querySelectorAll("[data-checkout]").forEach(function (link) {
+    var checkoutUrl = buildCheckoutUrl();
     if (checkoutUrl) link.href = checkoutUrl;
 
-    link.addEventListener("click", (event) => {
-      const target = buildCheckoutUrl();
+    link.addEventListener("click", function (event) {
+      var target = buildCheckoutUrl();
       if (!target) {
         event.preventDefault();
-        showNotice("O checkout ainda não foi configurado. Preencha checkoutUrl no arquivo config.js.");
+        showNotice("O checkout ainda n\u00e3o foi configurado.");
         return;
       }
       link.href = target;
-      if (typeof pintrk === "function") {
-        pintrk("track", "InitiateCheckout", { value: config.price, currency: config.currency, product_name: config.productName });
+      if (getConsent() === "granted" && typeof pintrk === "function") {
+        fireInitiateCheckout();
       }
     });
   });
 
-  const producerName = String(config.producerName || "").trim() || "Identificação do produtor pendente";
-  const supportEmail = String(config.supportEmail || "").trim() || "suporte a definir";
+  var producerName = String(config.producerName || "").trim() || "Identifica\u00e7\u00e3o do produtor pendente";
+  var supportEmail = String(config.supportEmail || "").trim() || "suporte a definir";
 
-  document.querySelectorAll("[data-current-year]").forEach((node) => {
+  document.querySelectorAll("[data-current-year]").forEach(function (node) {
     node.textContent = String(new Date().getFullYear());
   });
-  document.querySelectorAll("[data-producer-name]").forEach((node) => {
+  document.querySelectorAll("[data-producer-name]").forEach(function (node) {
     node.textContent = producerName;
   });
-  document.querySelectorAll("[data-support-email]").forEach((node) => {
+  document.querySelectorAll("[data-support-email]").forEach(function (node) {
     node.textContent = supportEmail;
   });
-  document.querySelectorAll("[data-support-link]").forEach((link) => {
+  document.querySelectorAll("[data-support-link]").forEach(function (link) {
     if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)) {
-      link.href = `mailto:${supportEmail}`;
+      link.href = "mailto:" + supportEmail;
     } else {
       link.removeAttribute("href");
     }
   });
 
-  document.querySelectorAll(".faq__question").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const expanded = btn.getAttribute("aria-expanded") === "true";
+  document.querySelectorAll(".faq__question").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var expanded = btn.getAttribute("aria-expanded") === "true";
       btn.setAttribute("aria-expanded", String(!expanded));
-      const answerId = btn.getAttribute("aria-controls");
+      var answerId = btn.getAttribute("aria-controls");
       if (answerId) {
-        const answer = document.getElementById(answerId);
+        var answer = document.getElementById(answerId);
         if (answer) {
           if (expanded) {
             answer.setAttribute("hidden", "");
@@ -104,28 +194,28 @@ import "./config.js";
     });
   });
 
-  const lightboxEl = document.getElementById("collection-lightbox");
-  const lightboxTitle = document.getElementById("lightbox-title");
-  const lightboxImage = document.getElementById("lightbox-image");
-  const lightboxCaption = document.getElementById("lightbox-caption");
-  const lightboxCounter = document.querySelector(".lightbox__counter");
-  const closeBtn = document.querySelector(".lightbox__close");
-  const prevBtn = document.querySelector(".lightbox__prev");
-  const nextBtn = document.querySelector(".lightbox__next");
+  var lightboxEl = document.getElementById("collection-lightbox");
+  var lightboxTitle = document.getElementById("lightbox-title");
+  var lightboxImage = document.getElementById("lightbox-image");
+  var lightboxCaption = document.getElementById("lightbox-caption");
+  var lightboxCounter = document.querySelector(".lightbox__counter");
+  var closeBtn = document.querySelector(".lightbox__close");
+  var prevBtn = document.querySelector(".lightbox__prev");
+  var nextBtn = document.querySelector(".lightbox__next");
 
   if (lightboxEl && lightboxTitle && lightboxImage) {
-    const collections = Array.from(document.querySelectorAll(".collection[data-title]"));
-    let currentIndex = -1;
-    let previousFocus = null;
+    var collections = Array.from(document.querySelectorAll(".collection[data-title]"));
+    var currentIndex = -1;
+    var previousFocus = null;
 
     function openLightbox(index) {
       if (index < 0 || index >= collections.length) return;
       currentIndex = index;
-      const col = collections[currentIndex];
-      const title = col.getAttribute("data-title") || "";
-      const imageSrc = col.getAttribute("data-image") || "";
-      const imgEl = col.querySelector("img");
-      const altText = imgEl ? imgEl.getAttribute("alt") || "" : "";
+      var col = collections[currentIndex];
+      var title = col.getAttribute("data-title") || "";
+      var imgEl = col.querySelector("img");
+      var imageSrc = imgEl ? imgEl.getAttribute("src") || "" : "";
+      var altText = imgEl ? imgEl.getAttribute("alt") || "" : "";
 
       lightboxTitle.textContent = title;
       lightboxImage.setAttribute("src", imageSrc);
@@ -161,11 +251,11 @@ import "./config.js";
       else openLightbox(0);
     }
 
-    document.querySelectorAll(".collection__expand").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const article = e.currentTarget.closest(".collection");
+    document.querySelectorAll(".collection__expand").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        var article = e.currentTarget.closest(".collection");
         if (!article) return;
-        const idx = collections.indexOf(article);
+        var idx = collections.indexOf(article);
         if (idx >= 0) {
           previousFocus = e.currentTarget;
           openLightbox(idx);
@@ -174,15 +264,14 @@ import "./config.js";
     });
 
     if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
-
     if (prevBtn) prevBtn.addEventListener("click", prevCollection);
     if (nextBtn) nextBtn.addEventListener("click", nextCollection);
 
-    lightboxEl.addEventListener("click", (e) => {
+    lightboxEl.addEventListener("click", function (e) {
       if (e.target === lightboxEl) closeLightbox();
     });
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", function (e) {
       if (lightboxEl.hasAttribute("hidden")) return;
       if (e.key === "Escape") {
         e.preventDefault();
