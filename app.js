@@ -190,23 +190,6 @@ import "./config.js";
     }
   }
 
-  /* Conditional content: author section */
-  if (helpers.creatorReady && helpers.creatorReady()) {
-    var authorSection = document.getElementById("author-section");
-    var authorName = document.getElementById("author-name");
-    var authorRole = document.getElementById("author-role");
-    var authorBio = document.getElementById("author-bio");
-    var authorPhoto = document.getElementById("author-photo");
-    if (authorSection) authorSection.removeAttribute("hidden");
-    if (authorName) authorName.textContent = config.creatorName;
-    if (authorRole) authorRole.textContent = config.creatorRole;
-    if (authorBio) authorBio.textContent = config.creatorBio;
-    if (authorPhoto) {
-      authorPhoto.setAttribute("src", config.creatorPhoto);
-      authorPhoto.setAttribute("alt", config.creatorName);
-    }
-  }
-
   /* Conditional content: testimonials section */
   if (helpers.hasAuthorizedTestimonials && helpers.hasAuthorizedTestimonials()) {
     var testimonialsSection = document.getElementById("testimonials-section");

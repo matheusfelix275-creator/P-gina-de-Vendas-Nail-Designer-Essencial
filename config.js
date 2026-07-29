@@ -9,10 +9,6 @@ window.SITE_CONFIG = Object.freeze({
   currency: "BRL",
   sellerName: "",
   brandName: "Kit Nail Designer Essencial",
-  creatorName: "",
-  creatorRole: "",
-  creatorBio: "",
-  creatorPhoto: "",
   supportWhatsApp: "",
   supportHours: "",
   privacyEmail: "",
@@ -22,10 +18,6 @@ window.SITE_CONFIG = Object.freeze({
 window.SITE_CONTENT_HELPERS = Object.freeze({
   isFilled: function (value) {
     return typeof value === "string" && value.trim().length > 0;
-  },
-  creatorReady: function () {
-    var c = window.SITE_CONFIG;
-    return this.isFilled(c.creatorName) && this.isFilled(c.creatorBio) && this.isFilled(c.creatorPhoto);
   },
   hasAuthorizedTestimonials: function () {
     var t = window.SITE_CONFIG.testimonials;

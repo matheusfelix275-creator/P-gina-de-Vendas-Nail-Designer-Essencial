@@ -23,6 +23,22 @@ const patterns = [
   /risco zero/i,
   /template nativo do Canva/i,
   /quatro planilhas/i,
+  /POR TRÁS DO KIT/i,
+  /Quem criou o kit/i,
+  /creatorName/i,
+  /creatorRole/i,
+  /creatorBio/i,
+  /creatorPhoto/i,
+  /section--author/i,
+  /author-section/i,
+  /author__card/i,
+  /author__photo/i,
+  /author__name/i,
+  /author__role/i,
+  /author__bio/i,
+  /\[NOME DA CRIADORA\]/i,
+  /\[FOTO AUTORIZADA\]/i,
+  /\[EXPERIÊNCIA REAL\]/i,
 ];
 
 function scanFile(filePath) {
