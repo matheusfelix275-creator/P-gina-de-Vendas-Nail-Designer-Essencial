@@ -4,6 +4,10 @@ import "./config.js";
   "use strict";
 
   const config = window.SITE_CONFIG || {};
+
+  if (!config.checkoutUrl || config.checkoutUrl === "#") {
+    console.error("ERRO: A URL de checkout em config.js precisa ser preenchida antes do build de produ\u00e7\u00e3o.");
+  }
   const STORAGE_KEY = "kn_measurement_consent_v1";
 
   function getConsent() {
@@ -139,6 +143,7 @@ import "./config.js";
   }
 
   document.querySelectorAll("[data-checkout]").forEach(function (link) {
+    link.setAttribute("rel", "noopener noreferrer");
     var checkoutUrl = buildCheckoutUrl();
     if (checkoutUrl) link.href = checkoutUrl;
 
@@ -155,6 +160,34 @@ import "./config.js";
       }
     });
   });
+
+  function fireAnalyticsEvent(eventName, data) {
+    if (getConsent() !== "granted" || typeof pintrk !== "function") return;
+    pintrk("track", eventName, data || {});
+  }
+
+  document.querySelectorAll("[data-analytics]").forEach(function (el) {
+    var eventName = el.getAttribute("data-analytics");
+    if (!eventName) return;
+    el.addEventListener("click", function () {
+      fireAnalyticsEvent(eventName);
+    });
+  });
+
+  if (typeof IntersectionObserver !== "undefined") {
+    var pricingEls = document.querySelectorAll("[data-analytics=\"view_pricing\"]");
+    if (pricingEls.length) {
+      var pricingObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            fireAnalyticsEvent("view_pricing");
+            pricingObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+      pricingEls.forEach(function (el) { pricingObserver.observe(el); });
+    }
+  }
 
   var producerName = String(config.producerName || "").trim() || "Identifica\u00e7\u00e3o do produtor pendente";
   var supportEmail = String(config.supportEmail || "").trim() || "suporte a definir";
@@ -180,6 +213,9 @@ import "./config.js";
     btn.addEventListener("click", function () {
       var expanded = btn.getAttribute("aria-expanded") === "true";
       btn.setAttribute("aria-expanded", String(!expanded));
+      if (!expanded) {
+        fireAnalyticsEvent("open_faq");
+      }
       var answerId = btn.getAttribute("aria-controls");
       if (answerId) {
         var answer = document.getElementById(answerId);
