@@ -338,11 +338,14 @@
           <p class="section__eyebrow">DUAS PLANILHAS INCLUÍDAS</p>
           <h2 id="spreadsheets-title" class="section__title">Organize cálculos e registros em arquivos separados</h2>
         </header>
-        <div class="spreadsheets__grid" role="list">
-          <article class="spreadsheets__card" role="listitem">
-            <h3 class="spreadsheets__card-title">Calculadora de preços</h3>
-            <p class="spreadsheets__card-text">Planilha para registrar custos, tempo, taxas, margem e informações utilizadas na análise de preços.</p>
-            <ul class="spreadsheets__card-list">
+        <div class="spreadsheet-block">
+          <div class="spreadsheet-block__visual">
+            <img src="./assets/calculadora-precos.png" alt="Captura da planilha Calculadora de preços" width="1279" height="991" loading="lazy" decoding="async" class="spreadsheet-block__img">
+          </div>
+          <div class="spreadsheet-block__content">
+            <h3 class="spreadsheet-block__title">Calculadora de preços</h3>
+            <p class="spreadsheet-block__text">Planilha para registrar custos, tempo, taxas, margem e informações utilizadas na análise de preços.</p>
+            <ul class="spreadsheet-block__list">
               <li>custos fixos</li>
               <li>materiais e despesas</li>
               <li>tempo de execução</li>
@@ -351,11 +354,13 @@
               <li>comparação entre serviços</li>
               <li>painel de resultados</li>
             </ul>
-          </article>
-          <article class="spreadsheets__card" role="listitem">
-            <h3 class="spreadsheets__card-title">Controle de serviços</h3>
-            <p class="spreadsheets__card-text">Planilha para registrar serviços, valores, pagamentos, preferências e datas de retorno.</p>
-            <ul class="spreadsheets__card-list">
+          </div>
+        </div>
+        <div class="spreadsheet-block spreadsheet-block--reverse">
+          <div class="spreadsheet-block__content">
+            <h3 class="spreadsheet-block__title">Controle de serviços</h3>
+            <p class="spreadsheet-block__text">Planilha para registrar serviços, valores, pagamentos, preferências e datas de retorno.</p>
+            <ul class="spreadsheet-block__list">
               <li>registros de atendimento</li>
               <li>serviço realizado</li>
               <li>valor</li>
@@ -365,9 +370,9 @@
               <li>resumo mensal</li>
               <li>gráfico ou painel</li>
             </ul>
-          </article>
+          </div>
         </div>
-        <p class="scope-note">O kit contém duas planilhas. Os itens apresentados acima são recursos e áreas internas desses arquivos.</p>
+        <p class="spreadsheet-block__note">O kit contém duas planilhas. Os itens apresentados acima são recursos e áreas internas desses arquivos.</p>
       </div>
     </section>
 
@@ -425,12 +430,13 @@
 
     <section class="section section--standard section--offline" aria-labelledby="offline-title">
       <div class="container">
-        <div class="offline__card">
-          <header class="section__header">
+        <div class="offline__layout">
+          <div class="offline__content">
             <p class="section__eyebrow">CENTRAL OFFLINE INCLUÍDA</p>
             <h2 id="offline-title" class="section__title">Navegue pelos arquivos depois de baixar o kit</h2>
-            <p class="section__lede">O produto inclui uma página HTML que pode ser aberta localmente para acessar os principais materiais e escolher uma rota de uso.</p>
-          </header>
+            <p class="offline__lede">O produto inclui uma página HTML que pode ser aberta localmente para acessar os principais materiais e escolher uma rota de uso.</p>
+            <p class="offline__note">O download e o recebimento inicial do produto dependem de acesso à internet. Depois de baixar e extrair os arquivos, a Central do Kit pode ser aberta localmente.</p>
+          </div>
           <div class="offline__benefits">
             <div class="offline__item">
               <span class="offline__item-icon" aria-hidden="true">
@@ -457,7 +463,6 @@
               <span>Abertura local após o download</span>
             </div>
           </div>
-          <p class="offline__note">O download e o recebimento inicial do produto dependem de acesso à internet. Depois de baixar e extrair os arquivos, a Central do Kit pode ser aberta localmente.</p>
         </div>
       </div>
     </section>
