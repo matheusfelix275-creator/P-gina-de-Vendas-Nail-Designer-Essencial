@@ -6,6 +6,11 @@ window.SITE_CONFIG = Object.freeze({
   productId: "kit-nail-designer-essencial",
   productName: "Kit Nail Designer Essencial",
   price: 49.9,
-  currency: "BRL"
+  currency: "BRL",
+  sellerName: "",
+  brandName: "Kit Nail Designer Essencial",
+  supportWhatsApp: "",
+  supportHours: "",
+  privacyEmail: "",
 });
 

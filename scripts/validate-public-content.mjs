@@ -5,8 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
-const prohibited = [
-  // Placeholders
+const patterns = [
   /\[nome/i,
   /\[foto/i,
   /\[experiência/i,
@@ -15,16 +14,42 @@ const prohibited = [
   /substituir/i,
   /todo:/i,
   /fixme:/i,
+  /especialista renomada/i,
+  /centenas de clientes/i,
+  /milhares de clientes/i,
+  /agenda lotada/i,
+  /renda garantida/i,
+  /resultado garantido/i,
+  /risco zero/i,
+  /template nativo do Canva/i,
+  /quatro planilhas/i,
+  /POR TRÁS DO KIT/i,
+  /Quem criou o kit/i,
+  /creatorName/i,
+  /creatorRole/i,
+  /creatorBio/i,
+  /creatorPhoto/i,
+  /section--author/i,
+  /author-section/i,
+  /author__card/i,
+  /author__photo/i,
+  /author__name/i,
+  /author__role/i,
+  /author__bio/i,
+  /\[NOME DA CRIADORA\]/i,
+  /\[FOTO AUTORIZADA\]/i,
+  /\[EXPERIÊNCIA REAL\]/i,
   // Depoimentos
-  /O\s*que\s*dizem\s*quem\s*já\s*usou/i,
   /section--testimonials/i,
-  /testimonials-container/i,
   /testimonials-grid/i,
-  /\btestimonials\b/i,
+  /O\s*que\s*dizem\s*quem\s*já\s*usou/i,
   // Copy antiga
   /Use\s*no\s*PowerPoint,\s*Canva\s*ou\s*Google\s*Slides/i,
   /PPTX\s*editável\s*no\s*PowerPoint,\s*Canva\s*e\s*Google\s*Slides/i,
-  // Headings vazios
+  // Fallbacks proibidos
+  /Identificação\s*do\s*produtor\s*pendente/i,
+  /suporte\s*a\s*definir/i,
+  // Headings vazios (single-line)
   /<h[1-6][^>]*>\s*<\/h[1-6]>/i,
 ];
 
@@ -33,9 +58,9 @@ function scanFile(filePath) {
   const lines = content.split("\n");
   let found = false;
   for (let i = 0; i < lines.length; i++) {
-    for (const pattern of prohibited) {
+    for (const pattern of patterns) {
       if (pattern.test(lines[i])) {
-        console.error(`ERRO: Conteúdo proibido encontrado em ${filePath}:${i + 1}`);
+        console.error(`ERRO: Placeholder encontrado em ${filePath}:${i + 1}`);
         console.error(`  Padrão: ${pattern.source}`);
         console.error(`  Linha: ${lines[i].trim().substring(0, 120)}`);
         found = true;
@@ -60,16 +85,18 @@ const filesToCheck = [
   resolve(root, "politica-de-privacidade.html"),
   resolve(root, "termos-de-uso.html"),
   resolve(root, "app.js"),
+  resolve(root, "legal.js"),
+  resolve(root, "config.js"),
 ];
 
-// Also check dist if it exists
-const distIndex = resolve(root, "dist", "index.html");
-try {
-  readFileSync(distIndex);
-  filesToCheck.push(distIndex);
-} catch {
-  // dist might not exist yet
-}
+// Also check dist HTML files if they exist
+["index.html", "politica-de-privacidade.html", "termos-de-uso.html"].forEach(function (name) {
+  var p = resolve(root, "dist", name);
+  try {
+    readFileSync(p);
+    filesToCheck.push(p);
+  } catch (_) {}
+});
 
 let hasError = false;
 for (const file of filesToCheck) {
@@ -84,8 +111,8 @@ for (const file of filesToCheck) {
 }
 
 if (hasError) {
-  console.error("\n VALIDAÇÃO FALHOU — corrija os problemas antes de publicar.");
+  console.error("\n VALIDAÇÃO FALHOU — remova os placeholders antes de publicar.");
   process.exit(1);
 } else {
-  console.log(" Validação de conteúdo público: nenhum problema encontrado.");
+  console.log(" Validação de conteúdo público: nenhum placeholder encontrado.");
 }

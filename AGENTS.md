@@ -17,7 +17,7 @@ O build inclui validação automática de placeholders via `scripts/validate-pub
 
 ## Estrutura da página
 
-Ordem das seções após a reformulação:
+Ordem das seções:
 
 1. **Hero** — primeira dobra fixa (eyebrow, headline, 3 benefícios, preço, CTA)
 2. **Trust bar** — 4 itens de confiança (Kiwify, digital, e-mail, cancelamento)
@@ -31,9 +31,11 @@ Ordem das seções após a reformulação:
 10. **Offline** — central offline (página HTML local)
 11. **Audience** — é/não é para quem
 12. **Formats** — chips de formato + licença
-13. **FAQ** — perguntas frequentes com accordion
-14. **Checkout** — card final com preço e CTA
-15. **Footer** — marca, suporte, links legais
+13. **Purchase security** — 4 etapas pós-pagamento
+15. **Guarantee** — prazo de 7 dias para avaliar
+16. **FAQ** — perguntas frequentes com accordion
+17. **Checkout** — card final com preço e CTA
+18. **Footer** — 4 grupos (Produto, Compra, Atendimento, Identificação)
 
 ## Fonte oficial
 
