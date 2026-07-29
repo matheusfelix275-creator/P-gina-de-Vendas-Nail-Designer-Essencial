@@ -14,6 +14,15 @@ const patterns = [
   /substituir/i,
   /todo:/i,
   /fixme:/i,
+  /especialista renomada/i,
+  /centenas de clientes/i,
+  /milhares de clientes/i,
+  /agenda lotada/i,
+  /renda garantida/i,
+  /resultado garantido/i,
+  /risco zero/i,
+  /template nativo do Canva/i,
+  /quatro planilhas/i,
 ];
 
 function scanFile(filePath) {
@@ -37,16 +46,18 @@ const filesToCheck = [
   resolve(root, "politica-de-privacidade.html"),
   resolve(root, "termos-de-uso.html"),
   resolve(root, "app.js"),
+  resolve(root, "legal.js"),
+  resolve(root, "config.js"),
 ];
 
-// Also check dist if it exists
-const distIndex = resolve(root, "dist", "index.html");
-try {
-  readFileSync(distIndex);
-  filesToCheck.push(distIndex);
-} catch {
-  // dist might not exist yet
-}
+// Also check dist HTML files if they exist
+["index.html", "politica-de-privacidade.html", "termos-de-uso.html"].forEach(function (name) {
+  var p = resolve(root, "dist", name);
+  try {
+    readFileSync(p);
+    filesToCheck.push(p);
+  } catch (_) {}
+});
 
 let hasError = false;
 for (const file of filesToCheck) {
