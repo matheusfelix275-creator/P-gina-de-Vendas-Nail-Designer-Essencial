@@ -2,23 +2,23 @@ import "./config.js";
 
 (function () {
   "use strict";
-  var config = window.SITE_CONFIG || {};
-  var year = String(new Date().getFullYear());
+  const config = window.SITE_CONFIG || {};
+  const year = String(new Date().getFullYear());
 
-  document.querySelectorAll("[data-legal-year]").forEach(function (node) {
+  document.querySelectorAll("[data-legal-year]").forEach((node) => {
     node.textContent = year;
   });
 
-  var producer = String(config.producerName || config.brandName || "").trim();
-  document.querySelectorAll("[data-legal-producer]").forEach(function (node) {
+  const producer = String(config.producerName || "").trim();
+  document.querySelectorAll("[data-legal-producer]").forEach((node) => {
     node.textContent = producer;
   });
 
-  var email = String(config.supportEmail || "").trim();
-  document.querySelectorAll("[data-legal-email]").forEach(function (node) {
+  const email = String(config.supportEmail || "").trim();
+  document.querySelectorAll("[data-legal-email]").forEach((node) => {
     node.textContent = email;
   });
-  document.querySelectorAll("[data-legal-email-link]").forEach(function (link) {
+  document.querySelectorAll("[data-legal-email-link]").forEach((link) => {
     if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       link.href = "mailto:" + email;
     } else {
