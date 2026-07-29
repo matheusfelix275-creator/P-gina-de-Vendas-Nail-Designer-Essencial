@@ -13,6 +13,28 @@ Esta é uma landing page estática em português do Brasil para vender um produt
 
 Sempre execute `npm run build` depois de alterações em HTML, JavaScript, configuração ou ativos.
 
+O build inclui validação automática de placeholders via `scripts/validate-public-content.mjs`.
+
+## Estrutura da página
+
+Ordem das seções após a reformulação:
+
+1. **Hero** — primeira dobra fixa (eyebrow, headline, 3 benefícios, preço, CTA)
+2. **Trust bar** — 4 itens de confiança (Kiwify, digital, e-mail, reembolso)
+3. **Problem** — 3 cards contexto/problema (título + texto + "Como o kit ajuda")
+4. **Transformation** — 4 etapas numeradas (praticar, montar catálogo, apresentar, organizar)
+5. **Content blocks** — 4 blocos alternados (prática, referências, apresentação, organização)
+6. **Collections** — grid 4x2 das 8 coleções com lightbox
+7. **Spreadsheets** — 2 planilhas reais (calculadora de preços + controle de serviços)
+8. **Applications** — 5 aplicações dos modelos
+9. **Mid-CTA** — card centralizado entre seções
+10. **Offline** — central offline (página HTML local)
+11. **Audience** — é/não é para quem
+12. **Formats** — chips de formato + licença
+13. **FAQ** — perguntas frequentes com accordion
+14. **Checkout** — card final com preço e CTA
+15. **Footer** — marca, suporte, links legais
+
 ## Fonte oficial
 
 - A página principal está em `index.html`.
