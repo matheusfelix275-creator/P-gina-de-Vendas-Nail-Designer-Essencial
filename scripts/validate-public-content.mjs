@@ -66,6 +66,20 @@ const patterns = [
   /newsletter/i,
   // Href="#" em CTAs
   /data-checkout[^>]*href\s*=\s*["']#["'][^>]*>/i,
+  // Analytics: data-checkout sem data-cta-location
+  /<[^>]*\sdata-checkout\b(?![^>]*data-cta-location\b)[^>]*>/i,
+  // Analytics: data-analytics="open_faq" remanescente
+  /data-analytics\s*=\s*["']open_faq["']/i,
+  // Analytics: data-analytics="view_pricing" remanescente
+  /data-analytics\s*=\s*["']view_pricing["']/i,
+  // Analytics: listener genérico [data-analytics]
+  /querySelectorAll\s*\(\s*["']\[data-analytics\]/i,
+  // Storage: acesso direto localStorage (não aplicado a app.js que tem wrappers seguros)
+  // Storage: acesso direto sessionStorage (não aplicado a app.js que tem wrappers seguros)
+  // Analytics: UTMs aninhadas em data.utms
+  /["']utms["']\s*:/i,
+  // Analytics: debug por substring (deve usar URLSearchParams)
+  /analytics_debug[^=]+===\s*-1/,
 ];
 
 function scanFile(filePath) {
@@ -91,6 +105,30 @@ function scanFile(filePath) {
     console.error(`ERRO: Heading vazio encontrado em ${filePath}`);
     console.error(`  Trecho: ${snippet}`);
     found = true;
+  }
+  // Multi-line structural checks
+  const checkoutCount = (content.match(/data-checkout/g) || []).length;
+  if (filePath.endsWith("index.html") && checkoutCount !== 5) {
+    console.error(`ERRO: index.html contém ${checkoutCount} data-checkout (devem ser exatamente 5)`);
+    found = true;
+  }
+  const pintrkPage = (content.match(/pintrk\s*\(\s*["']page["']\s*\)/g) || []).length;
+  if (filePath.endsWith("app.js") && pintrkPage > 1) {
+    console.error(`ERRO: app.js contém ${pintrkPage} pintrk("page") (máximo 1 permitido)`);
+    found = true;
+  }
+  const pintrkLoad = (content.match(/pintrk\s*\(\s*["']load["']\s*,/g) || []).length;
+  if (filePath.endsWith("app.js") && pintrkLoad > 1) {
+    console.error(`ERRO: app.js contém ${pintrkLoad} pintrk("load") (máximo 1 permitido)`);
+    found = true;
+  }
+  // HTML files should not have direct localStorage/sessionStorage access
+  if (filePath.endsWith(".html") && !filePath.includes("node_modules")) {
+    var storageMethods = content.match(/(localStorage|sessionStorage)\.\s*(getItem|setItem)\s*\(/g);
+    if (storageMethods && storageMethods.length) {
+      console.error(`ERRO: Acesso direto a storage encontrado em ${filePath}: ${storageMethods.length} ocorrência(s)`);
+      found = true;
+    }
   }
   return found;
 }

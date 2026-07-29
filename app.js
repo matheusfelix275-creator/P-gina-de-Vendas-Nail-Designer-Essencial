@@ -8,32 +8,60 @@ import "./config.js";
     console.error("ERRO: A URL de checkout em config.js precisa ser preenchida antes do build de produ\u00e7\u00e3o.");
   }
 
-  /* Consent */
+  /* ==================== SAFE STORAGE ==================== */
+  function safeLocalStorageGet(key) {
+    try { return localStorage.getItem(key); }
+    catch (_) { return null; }
+  }
+  function safeLocalStorageSet(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (_) { return false; }
+  }
+  function safeSessionStorageGet(key) {
+    try { return sessionStorage.getItem(key); }
+    catch (_) { return null; }
+  }
+  function safeSessionStorageSet(key, value) {
+    try { sessionStorage.setItem(key, value); return true; }
+    catch (_) { return false; }
+  }
+
+  /* ==================== HELPERS ==================== */
+  function escapeHtml(str) {
+    var div = document.createElement("div");
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  function getPagePath() {
+    return window.location.pathname || "/";
+  }
+
+  function getDeviceGroup() {
+    return window.innerWidth < 768 ? "mobile" : "desktop";
+  }
+
+  /* ==================== CONSENT ==================== */
   var STORAGE_KEY = "kn_measurement_consent_v1";
+  var memoryConsent = null;
 
   function getConsent() {
-    var stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "granted") return "granted";
-    if (stored === "denied") return "denied";
+    if (memoryConsent !== null) return memoryConsent;
+    var stored = safeLocalStorageGet(STORAGE_KEY);
+    if (stored === "granted" || stored === "denied") {
+      memoryConsent = stored;
+      return stored;
+    }
     return null;
   }
 
   function setConsent(value) {
-    localStorage.setItem(STORAGE_KEY, value);
+    memoryConsent = value;
+    safeLocalStorageSet(STORAGE_KEY, value);
   }
 
-  var banner = document.querySelector("[data-consent-banner]");
-  var acceptBtn = document.querySelector("[data-consent-accept]");
-  var denyBtn = document.querySelector("[data-consent-deny]");
-  var preferencesLink = document.querySelector("[data-consent-preferences]");
-
-  function showBanner() {
-    if (banner) banner.removeAttribute("hidden");
-  }
-
-  function hideBanner() {
-    if (banner) banner.setAttribute("hidden", "");
-  }
+  /* ==================== PINTEREST ==================== */
+  var pinterestInitialized = false;
 
   function loadPinterestTag() {
     if (window.pintrk) return;
@@ -41,6 +69,7 @@ import "./config.js";
   }
 
   function initPinterest() {
+    if (pinterestInitialized) return;
     var tagId = config.pinterestTagId;
     if (!tagId) return;
     loadPinterestTag();
@@ -50,61 +79,75 @@ import "./config.js";
       pintrk("track", "pagevisit");
       window._kn_pv = true;
     }
+    pinterestInitialized = true;
   }
 
-  var currentConsent = getConsent();
-  if (currentConsent === "granted") {
-    initPinterest();
-    hideBanner();
-  } else if (currentConsent === "denied") {
-    hideBanner();
-  } else {
-    showBanner();
+  /* ==================== DEBUG ==================== */
+  var ANALYTICS_DEBUG = new URLSearchParams(window.location.search).get("analytics_debug") === "1";
+
+  function logAnalytics(action, eventName, data) {
+    if (!ANALYTICS_DEBUG) return;
+    var time = new Date().toISOString();
+    console.log("[ANALYTICS] " + action + ": " + eventName, JSON.stringify(data || {}), time);
   }
 
-  if (acceptBtn) {
-    acceptBtn.addEventListener("click", function () {
-      setConsent("granted");
-      hideBanner();
-      initPinterest();
-    });
-  }
-
-  if (denyBtn) {
-    denyBtn.addEventListener("click", function () {
-      setConsent("denied");
-      hideBanner();
-      if (typeof pintrk === "function") {
-        window.location.reload();
-      }
-    });
-  }
-
-  if (preferencesLink) {
-    preferencesLink.addEventListener("click", function (e) {
-      e.preventDefault();
-      currentConsent = getConsent();
-      showBanner();
-    });
-  }
-
-  /* Tracking keys and checkout */
-  var trackingKeys = [
-    "utm_source", "utm_medium", "utm_campaign",
-    "utm_term", "utm_content"
-  ];
+  /* ==================== UTM ==================== */
+  var UTM_CACHE_KEY = "kn_campaign_utms_v1";
+  var trackingKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
   var pageUtms = null;
+
+  function sanitizeUtmValue(value) {
+    if (typeof value !== "string") return "";
+    value = value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+    if (value.length > 200) value = value.substring(0, 200);
+    return value;
+  }
 
   function captureUtms() {
     if (pageUtms) return pageUtms;
-    var qs = new URLSearchParams(window.location.search);
     pageUtms = {};
+    var qs = new URLSearchParams(window.location.search);
+    var hasUtmInUrl = false;
+
     trackingKeys.forEach(function (key) {
-      var val = qs.get(key);
-      if (val) pageUtms[key] = val;
+      var raw = qs.get(key);
+      if (raw === null) {
+        qs.forEach(function (v, k) {
+          if (k.toLowerCase() === key && raw === null) {
+            raw = v;
+          }
+        });
+      }
+      if (raw !== null) {
+        hasUtmInUrl = true;
+        var sanitized = sanitizeUtmValue(raw);
+        if (sanitized) pageUtms[key] = sanitized;
+      }
     });
+
+    if (hasUtmInUrl) {
+      safeSessionStorageSet(UTM_CACHE_KEY, JSON.stringify(pageUtms));
+    } else {
+      var cached = safeSessionStorageGet(UTM_CACHE_KEY);
+      if (cached) {
+        try {
+          var parsed = JSON.parse(cached);
+          if (typeof parsed === "object" && parsed !== null) {
+            pageUtms = {};
+            trackingKeys.forEach(function (key) {
+              if (typeof parsed[key] === "string" && parsed[key]) {
+                pageUtms[key] = parsed[key];
+              }
+            });
+          }
+        } catch (_) {}
+      }
+    }
+
     return pageUtms;
   }
+
+  /* ==================== NOTICE ==================== */
   var notice = document.querySelector("[data-site-notice]");
   var noticeTimer;
 
@@ -116,6 +159,7 @@ import "./config.js";
     noticeTimer = window.setTimeout(function () { notice.setAttribute("hidden", ""); }, 4200);
   }
 
+  /* ==================== CHECKOUT ==================== */
   function validCheckoutUrl(value) {
     try {
       var url = new URL(value);
@@ -130,37 +174,13 @@ import "./config.js";
   function buildCheckoutUrl() {
     if (!validCheckoutUrl(config.checkoutUrl)) return null;
     var target = new URL(config.checkoutUrl);
-    var qs = new URLSearchParams(window.location.search);
+    var utms = captureUtms();
     trackingKeys.forEach(function (key) {
-      if (qs.has(key)) target.searchParams.set(key, qs.get(key));
+      if (utms[key]) target.searchParams.set(key, utms[key]);
     });
     return target.toString();
   }
 
-  /* Analytics: central function */
-  var ANALYTICS_DEBUG = window.location.search.indexOf("analytics_debug=1") !== -1;
-
-  function logAnalytics(action, eventName, data) {
-    if (!ANALYTICS_DEBUG) return;
-    var time = new Date().toISOString();
-    console.log("[ANALYTICS] " + action + ": " + eventName, JSON.stringify(data || {}), time);
-  }
-
-  function trackEvent(eventName, data) {
-    if (getConsent() !== "granted") {
-      logAnalytics("BLOQUEADO (consentimento)", eventName, data);
-      return;
-    }
-    if (typeof pintrk !== "function") {
-      logAnalytics("BLOQUEADO (pintrk ausente)", eventName, data);
-      return;
-    }
-    var payload = data || {};
-    pintrk("track", eventName, payload);
-    logAnalytics("ENVIADO", eventName, payload);
-  }
-
-  /* CTA event mapping */
   var ctaEventMap = {
     header: "click_primary_cta",
     hero: "click_primary_cta",
@@ -169,6 +189,69 @@ import "./config.js";
     sticky_mobile: "click_sticky_cta"
   };
 
+  /* ==================== ANALYTICS ==================== */
+  var ALLOWED_EVENTS = [
+    "pagevisit", "view_pricing", "view_product_contents", "view_collections",
+    "view_spreadsheets", "view_guarantee", "view_final_offer", "open_faq",
+    "click_primary_cta", "click_mid_page_cta", "begin_checkout", "click_sticky_cta",
+    "click_support_email", "click_support_whatsapp", "click_terms", "click_privacy"
+  ];
+
+  var ALLOWED_PAYLOAD_KEYS = [
+    "product_id", "product_name", "value", "currency", "page_path", "page_title",
+    "cta_location", "section_name", "faq_id", "faq_position", "device_group",
+    "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "source"
+  ];
+
+  function sanitizeEventPayload(data) {
+    if (!data || typeof data !== "object") return {};
+    var out = {};
+    ALLOWED_PAYLOAD_KEYS.forEach(function (key) {
+      if (data.hasOwnProperty(key) && data[key] !== null && data[key] !== undefined) {
+        var val = data[key];
+        if (typeof val === "string") {
+          val = val.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+          if (val.length > 200) val = val.substring(0, 200);
+          if (val) out[key] = val;
+        } else if (typeof val === "number") {
+          out[key] = val;
+        }
+      }
+    });
+    return out;
+  }
+
+  var pendingViewEvents = {};
+
+  function trackEvent(eventName, data) {
+    if (ALLOWED_EVENTS.indexOf(eventName) === -1) {
+      logAnalytics("IGNORADO (evento inv\u00e1lido)", eventName, data);
+      return "invalid_event";
+    }
+    if (getConsent() !== "granted") {
+      logAnalytics("BLOQUEADO (consentimento)", eventName, data);
+      return "blocked_consent";
+    }
+    if (typeof pintrk !== "function") {
+      logAnalytics("BLOQUEADO (pintrk ausente)", eventName, data);
+      return "blocked_provider";
+    }
+    var payload = sanitizeEventPayload(data);
+    pintrk("track", eventName, payload);
+    logAnalytics("ENVIADO", eventName, payload);
+    return "sent";
+  }
+
+  function flushPendingViews() {
+    var keys = Object.keys(pendingViewEvents);
+    if (!keys.length) return;
+    keys.forEach(function (event) {
+      trackEvent(event, pendingViewEvents[event]);
+    });
+    pendingViewEvents = {};
+  }
+
+  /* ==================== CTA SETUP ==================== */
   document.querySelectorAll("[data-checkout]").forEach(function (link) {
     link.setAttribute("rel", "noopener noreferrer");
     var checkoutUrl = buildCheckoutUrl();
@@ -190,67 +273,123 @@ import "./config.js";
       var utms = captureUtms();
       var data = {
         cta_location: location,
-        section_name: location === "header" || location === "hero" ? "hero" : location
+        section_name: location === "header" || location === "hero" ? "hero" : location,
+        page_path: getPagePath(),
+        device_group: getDeviceGroup()
       };
+      trackingKeys.forEach(function (key) {
+        if (utms[key]) data[key] = utms[key];
+      });
       if (location === "final_offer") {
         data.value = config.price;
         data.currency = config.currency;
         data.product_id = config.productId;
         data.product_name = config.productName;
+        data.source = "landing_page";
       }
-      if (Object.keys(utms).length) data.utms = utms;
       trackEvent(eventName, data);
     });
   });
 
-  /* Generic data-analytics listener (non-CTA: FAQ, nav links, etc.) */
-  document.querySelectorAll("[data-analytics]").forEach(function (el) {
-    if (el.hasAttribute("data-checkout")) return;
-    var eventName = el.getAttribute("data-analytics");
-    if (!eventName) return;
-    el.addEventListener("click", function () {
-      trackEvent(eventName);
-    });
-  });
+  /* ==================== CONSENT BANNER ==================== */
+  var banner = document.querySelector("[data-consent-banner]");
+  var acceptBtn = document.querySelector("[data-consent-accept]");
+  var denyBtn = document.querySelector("[data-consent-deny]");
+  var preferencesLink = document.querySelector("[data-consent-preferences]");
 
-  /* View events via IntersectionObserver */
+  function showBanner() {
+    if (banner) banner.removeAttribute("hidden");
+  }
+  function hideBanner() {
+    if (banner) banner.setAttribute("hidden", "");
+  }
+
+  var currentConsent = getConsent();
+  if (currentConsent === "granted") {
+    initPinterest();
+    hideBanner();
+  } else if (currentConsent === "denied") {
+    hideBanner();
+  } else {
+    showBanner();
+  }
+
+  if (acceptBtn) {
+    acceptBtn.addEventListener("click", function () {
+      setConsent("granted");
+      hideBanner();
+      initPinterest();
+      flushPendingViews();
+    });
+  }
+
+  if (denyBtn) {
+    denyBtn.addEventListener("click", function () {
+      setConsent("denied");
+      hideBanner();
+      if (pinterestInitialized) {
+        window.location.reload();
+      }
+    });
+  }
+
+  if (preferencesLink) {
+    preferencesLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      currentConsent = getConsent();
+      showBanner();
+    });
+  }
+
+  /* ==================== VIEW EVENTS OBSERVERS ==================== */
   if (typeof IntersectionObserver !== "undefined") {
     var viewConfigs = [
-      { selector: "[data-analytics=\"view_pricing\"]", event: "view_pricing", threshold: 0.5, section: "final_offer" },
-      { selector: ".section--content", event: "view_product_contents", threshold: 0.3, section: "content" },
-      { selector: ".section--collections", event: "view_collections", threshold: 0.3, section: "collections" },
-      { selector: ".section--spreadsheets", event: "view_spreadsheets", threshold: 0.3, section: "spreadsheets" }
+      { selector: ".checkout__price", event: "view_pricing", threshold: 0.5, section: "final_offer" },
+      { selector: ".section--content", event: "view_product_contents", threshold: 0.4, section: "content" },
+      { selector: ".section--collections", event: "view_collections", threshold: 0.4, section: "collections" },
+      { selector: ".section--spreadsheets", event: "view_spreadsheets", threshold: 0.4, section: "spreadsheets" },
+      { selector: ".section--guarantee", event: "view_guarantee", threshold: 0.4, section: "guarantee" },
+      { selector: ".section--checkout", event: "view_final_offer", threshold: 0.4, section: "final_offer" }
     ];
 
     viewConfigs.forEach(function (cfg) {
-      var els;
-      if (cfg.selector.indexOf("[data-analytics") === 0) {
-        els = document.querySelectorAll(cfg.selector);
-      } else {
-        var el = document.querySelector(cfg.selector);
-        els = el ? [el] : [];
-      }
-      if (!els.length) return;
+      var el = document.querySelector(cfg.selector);
+      if (!el) return;
       var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            var data = { section_name: cfg.section };
             observer.unobserve(entry.target);
-            trackEvent(cfg.event, data);
+            var eventData = {
+              section_name: cfg.section,
+              page_path: getPagePath(),
+              device_group: getDeviceGroup()
+            };
+            var result = trackEvent(cfg.event, eventData);
+            if (result === "blocked_consent") {
+              pendingViewEvents[cfg.event] = eventData;
+            }
           }
         });
       }, { threshold: cfg.threshold });
-      els.forEach(function (el) { observer.observe(el); });
+      observer.observe(el);
     });
   }
 
-  function escapeHtml(str) {
-    var div = document.createElement("div");
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-  }
+  /* ==================== SUPPORT DELEGATION ==================== */
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest('[data-analytics="click_support_email"]');
+    if (link) {
+      trackEvent("click_support_email");
+      return;
+    }
+    link = e.target.closest('[data-analytics="click_support_whatsapp"]');
+    if (link) {
+      trackEvent("click_support_whatsapp");
+      return;
+    }
+  });
 
-  /* Footer: support group */
+  /* ==================== SUPPORT & SECURITY LINKS ==================== */
   var supportEmail = String(config.supportEmail || "").trim();
   var supportWhatsApp = String(config.supportWhatsApp || "").trim();
   var supportHours = String(config.supportHours || "").trim();
@@ -304,9 +443,9 @@ import "./config.js";
     securitySupport.innerHTML = ' Em caso de d\u00favidas, escreva para <a href="mailto:' + escapeHtml(supportEmail) + '" data-analytics="click_support_email">' + escapeHtml(supportEmail) + '</a>.';
   }
 
-  /* FAQ accordion */
+  /* ==================== FAQ ==================== */
   var faqButtons = document.querySelectorAll(".faq__question");
-  faqButtons.forEach(function (btn) {
+  faqButtons.forEach(function (btn, index) {
     btn.addEventListener("click", function () {
       var wasExpanded = btn.getAttribute("aria-expanded") === "true";
 
@@ -322,33 +461,19 @@ import "./config.js";
         var currentPanel = currentPanelId ? document.getElementById(currentPanelId) : null;
         btn.setAttribute("aria-expanded", "true");
         if (currentPanel) currentPanel.removeAttribute("hidden");
-        trackEvent("open_faq", { faq_id: btn.getAttribute("aria-controls") });
+        var position = index + 1;
+        var faqId = "faq_" + (position < 10 ? "0" : "") + position;
+        trackEvent("open_faq", {
+          faq_id: faqId,
+          faq_position: position,
+          page_path: getPagePath(),
+          device_group: getDeviceGroup()
+        });
       }
     });
   });
 
-  /* View guarantee and final offer */
-  if (typeof IntersectionObserver !== "undefined") {
-    var remainingViews = [
-      { el: document.querySelector(".section--guarantee"), event: "view_guarantee", section: "guarantee" },
-      { el: document.querySelector(".section--checkout"), event: "view_final_offer", section: "final_offer" }
-    ];
-
-    remainingViews.forEach(function (cfg) {
-      if (!cfg.el) return;
-      var observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            observer.unobserve(entry.target);
-            trackEvent(cfg.event, { section_name: cfg.section });
-          }
-        });
-      }, { threshold: 0.3 });
-      observer.observe(cfg.el);
-    });
-  }
-
-  /* Footer: click_terms, click_privacy */
+  /* ==================== TERMS / PRIVACY ==================== */
   Array.from(document.querySelectorAll("a[href*='termos-de-uso']")).forEach(function (link) {
     link.addEventListener("click", function () {
       trackEvent("click_terms");
@@ -360,12 +485,12 @@ import "./config.js";
     });
   });
 
-  /* Mobile sticky CTA */
+  /* ==================== MOBILE STICKY CTA ==================== */
   var mobileBar = document.getElementById("mobile-sticky-cta");
   var closeBtn = document.querySelector(".mobile-bar__close");
   var checkoutSection = document.getElementById("checkout");
   var heroSection = document.querySelector(".hero");
-  var dismissed = sessionStorage.getItem("kn_mobile_cta_dismissed");
+  var dismissed = safeSessionStorageGet("kn_mobile_cta_dismissed");
 
   if (mobileBar && !dismissed) {
     function updateMobileBarVisibility() {
@@ -395,7 +520,7 @@ import "./config.js";
     if (closeBtn) {
       closeBtn.removeAttribute("hidden");
       closeBtn.addEventListener("click", function () {
-        sessionStorage.setItem("kn_mobile_cta_dismissed", "1");
+        safeSessionStorageSet("kn_mobile_cta_dismissed", "1");
         mobileBar.classList.remove("mobile-bar--visible");
         setTimeout(function () { mobileBar.setAttribute("hidden", ""); }, 300);
       });
@@ -404,7 +529,7 @@ import "./config.js";
     updateMobileBarVisibility();
   }
 
-  /* Lightbox */
+  /* ==================== LIGHTBOX ==================== */
   var lightboxEl = document.getElementById("collection-lightbox");
   var lightboxTitle = document.getElementById("lightbox-title");
   var lightboxImage = document.getElementById("lightbox-image");
@@ -498,5 +623,4 @@ import "./config.js";
       }
     });
   }
-
 })();

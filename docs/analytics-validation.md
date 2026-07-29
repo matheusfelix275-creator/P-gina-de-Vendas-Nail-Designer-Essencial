@@ -4,82 +4,170 @@
 
 | Evento | Tipo | Gatilho | Parâmetros | Observação |
 |---|---|---|---|---|
-| `pagevisit` | Automático | `pintrk("page")` + `pintrk("track", "pagevisit")` | — | Dispara 1x ao carregar após consentimento |
-| `view_pricing` | Visualização | IntersectionObserver (50%) sobre `.checkout__price-value` | `{ section_name: "final_offer" }` | Dispara 1x |
-| `view_product_contents` | Visualização | IntersectionObserver (30%) sobre `.section--content` | `{ section_name: "content" }` | Dispara 1x |
-| `view_collections` | Visualização | IntersectionObserver (30%) sobre `.section--collections` | `{ section_name: "collections" }` | Dispara 1x |
-| `view_spreadsheets` | Visualização | IntersectionObserver (30%) sobre `.section--spreadsheets` | `{ section_name: "spreadsheets" }` | Dispara 1x |
-| `view_guarantee` | Visualização | IntersectionObserver (30%) sobre `.section--guarantee` | `{ section_name: "guarantee" }` | Dispara 1x |
-| `view_final_offer` | Visualização | IntersectionObserver (30%) sobre `#checkout` | `{ section_name: "final_offer" }` | Dispara 1x |
-| `click_primary_cta` | Clique | CTA com `data-cta-location="header"` ou `"hero"` | `{ cta_location, section_name, utms? }` | |
-| `click_mid_page_cta` | Clique | CTA com `data-cta-location="mid_page"` | `{ cta_location, section_name, utms? }` | |
-| `begin_checkout` | Clique | CTA com `data-cta-location="final_offer"` | `{ cta_location, section_name, value, currency, product_id, product_name, utms? }` | Único CTA com dados de produto |
-| `click_sticky_cta` | Clique | CTA com `data-cta-location="sticky_mobile"` | `{ cta_location, section_name, utms? }` | |
-| `click_support_email` | Clique | Link de e-mail no footer/support | — | |
-| `click_support_whatsapp` | Clique | Link de WhatsApp no footer | — | |
-| `click_terms` | Clique | Qualquer link com `href` contendo `termos-de-uso` | — | |
-| `click_privacy` | Clique | Qualquer link com `href` contendo `politica-de-privacidade` | — | |
-| `open_faq` | Clique | Botão `.faq__question` | `{ faq_id: "faq-N" }` | Disparado apenas ao abrir (não ao fechar) |
+| `pagevisit` | Automático | `initPinterest()` → `pintrk("page")` + `pintrk("track", "pagevisit")` | — | Disparado 1x por carga, guardado por `pinterestInitialized` |
+| `view_pricing` | Visualização | IntersectionObserver (50%) sobre `.checkout__price` | `{ section_name, page_path, device_group }` | Disparado 1x; sem listener de clique |
+| `view_product_contents` | Visualização | IntersectionObserver (40%) sobre `.section--content` | `{ section_name, page_path, device_group }` | Disparado 1x |
+| `view_collections` | Visualização | IntersectionObserver (40%) sobre `.section--collections` | `{ section_name, page_path, device_group }` | Disparado 1x |
+| `view_spreadsheets` | Visualização | IntersectionObserver (40%) sobre `.section--spreadsheets` | `{ section_name, page_path, device_group }` | Disparado 1x |
+| `view_guarantee` | Visualização | IntersectionObserver (40%) sobre `.section--guarantee` | `{ section_name, page_path, device_group }` | Disparado 1x |
+| `view_final_offer` | Visualização | IntersectionObserver (40%) sobre `.section--checkout` | `{ section_name, page_path, device_group }` | Disparado 1x |
+| `click_primary_cta` | Clique | CTA `header` ou `hero` via listener `data-checkout` | `{ cta_location, section_name, page_path, device_group, utm_* }` | Sem listener genérico |
+| `click_mid_page_cta` | Clique | CTA `mid_page` via listener `data-checkout` | `{ cta_location, section_name, page_path, device_group, utm_* }` | |
+| `begin_checkout` | Clique | CTA `final_offer` via listener `data-checkout` | `{ cta_location, section_name, page_path, device_group, value, currency, product_id, product_name, source, utm_* }` | Único com dados de produto |
+| `click_sticky_cta` | Clique | CTA `sticky_mobile` via listener `data-checkout` | `{ cta_location, section_name, page_path, device_group, utm_* }` | |
+| `click_support_email` | Clique | Delegação em `document` sobre `[data-analytics="click_support_email"]` | — | 1 evento por clique; e-mail não enviado |
+| `click_support_whatsapp` | Clique | Delegação em `document` sobre `[data-analytics="click_support_whatsapp"]` | — | 1 evento por clique; número não enviado |
+| `click_terms` | Clique | Listener dedicado em `a[href*='termos-de-uso']` | — | |
+| `click_privacy` | Clique | Listener dedicado em `a[href*='politica-de-privacidade']` | — | |
+| `open_faq` | Clique | Listener do accordion `.faq__question` | `{ faq_id: "faq_01".."faq_08", faq_position: 1..8, page_path, device_group }` | Apenas ao abrir; fechar não dispara |
 
-## Mapeamento de CTA
+## Mapeamento de CTA — exatamente 5 externos
 
-| `data-cta-location` | Evento | Elemento | Localização na página |
+| `data-cta-location` | Evento | Elemento | Localização |
 |---|---|---|---|
 | `header` | `click_primary_cta` | `<header>` | Topo fixo |
 | `hero` | `click_primary_cta` | `.hero` | Primeira dobra |
 | `mid_page` | `click_mid_page_cta` | `.mid-cta__card` | Entre seções |
-| `final_offer` | `begin_checkout` | `#checkout` | Card final pré-footer |
-| `sticky_mobile` | `click_sticky_cta` | `#mobile-sticky-cta` | Barra fixa inferior (mobile) |
+| `final_offer` | `begin_checkout` | `#checkout` | Card final |
+| `sticky_mobile` | `click_sticky_cta` | `#mobile-sticky-cta` | Barra fixa mobile |
 
-**Nota:** O link "Acessar o kit" no footer (`<footer>`) possui `data-checkout` mas não `data-cta-location`. Ele não dispara evento de analytics propositalmente, pois é um link de navegação secundário.
+**Link do rodapé:** "Acessar o kit" é navegação interna (`href="#checkout"`), não possui `data-checkout`. Não é contado como CTA externo. Não dispara evento de analytics.
 
-## Parametrização UTM
+## Eventos não disparados na landing
 
-Parâmetros capturados da URL e repassados ao checkout:
+- `Checkout` — pertence ao checkout da Kiwify
+- `Purchase` — pertence ao checkout da Kiwify
+- `AddToCart` / `addToCart` — pertence ao checkout da Kiwify
+- `InitiateCheckout` — removido; consolidado em `begin_checkout`
+
+**`begin_checkout`** é evento customizado de intenção. Não deve ser mapeado como Checkout concluído no painel do Pinterest.
+
+## UTMs permitidas
 
 - `utm_source`
 - `utm_medium`
 - `utm_campaign`
-- `utm_term`
 - `utm_content`
+- `utm_term`
 
-A captura é feita via `URLSearchParams` e armazenada em cache (`pageUtms`). UTMs também são incluídas nos eventos de CTA como `data.utms` quando presentes.
+### Sanitização
+
+- Leitura case-insensitive (ex.: `UTM_SOURCE` → `utm_source`)
+- Caracteres de controle U+0000-U+001F e U+007F removidos
+- `trim()` aplicado
+- Máximo 200 caracteres
+- Valor vazio ignorado
+- Apenas primeira ocorrência é usada
+
+### Parâmetros rejeitados
+
+`email`, `telefone`, `phone`, `name`, `nome`, `cpf`, `src`, `sck`, `s1`, `s2`, `s3`, `analytics_debug` e qualquer parâmetro fora da whitelist.
+
+### Cache de sessão
+
+- Chave: `kn_campaign_utms_v1` em `sessionStorage`
+- UTMs da URL atual são salvas quando presentes
+- Quando a URL atual não tem UTMs, recupera da sessão
+- Dados validados novamente ao recuperar
+- `sessionStorage` indisponível: UTMs preservadas em memória apenas
+
+### Repasse ao checkout
+
+`buildCheckoutUrl()` usa exclusivamente `captureUtms()` como fonte. Parâmetros existentes na `checkoutUrl` não são sobrescritos. `analytics_debug` nunca é repassado.
+
+## Payload dos eventos
+
+### Chaves permitidas (`sanitizeEventPayload`)
+
+`product_id`, `product_name`, `value`, `currency`, `page_path`, `page_title`, `cta_location`, `section_name`, `faq_id`, `faq_position`, `device_group`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `source`
+
+### Regras
+
+- `undefined`, `null` e strings vazias são removidos
+- Strings limitadas a 200 caracteres, caracteres de controle removidos
+- Valores numéricos preservados
+- Objetos aninhados e arrays não são enviados
+- UTMs são chaves planas no payload (não `data.utms = {...}`)
+- `page_path` contém apenas `pathname`, sem query string
+- URLs completas não são enviadas
+- `device_group`: `"mobile"` (< 768px) ou `"desktop"` (≥ 768px) no momento do evento
 
 ## Consentimento
 
-A página usa consentimento explícito via banner (`kn_measurement_consent_v1` no `localStorage`).
+### Armazenamento seguro
 
-- **granted**: Pinterest Tag carregado, eventos disparados.
-- **denied**: Banner oculto, nenhum evento disparado.
-- **null (não definido)**: Banner exibido, nenhum script carregado até interação.
+Todos os acessos a `localStorage` e `sessionStorage` usam wrappers `try/catch`:
 
-Nenhum dado é coletado antes do consentimento. O `trackEvent()` bloqueia se o consentimento não for `"granted"`.
+- `safeLocalStorageGet(key)` — retorna `null` em falha
+- `safeLocalStorageSet(key, value)` — retorna `false` em falha
+- `safeSessionStorageGet(key)` — retorna `null` em falha
+- `safeSessionStorageSet(key, value)` — retorna `false` em falha
+
+### Estado em memória
+
+`memoryConsent` mantém o valor da sessão. `getConsent()` tenta o armazenamento primeiro, depois usa `memoryConsent`. `setConsent()` atualiza a memória e tenta persistir.
+
+### Comportamento
+
+- **Sem storage**: banner funcional durante a página, decisão não persiste, nenhum analytics sem consentimento, FAQ/CTAs/lightbox intactos
+- **granted**: Pinterest carregado 1x, eventos enviados imediatamente, pendentes liberados
+- **denied**: banner oculto, eventos bloqueados, página recarregada se Pinterest já estava ativo (para limpar `pintrk`)
+- **null (indefinido)**: banner exibido, aguarda decisão
+
+### Eventos vistos antes do consentimento
+
+Seções observadas por IntersectionObserver antes do aceite são registradas em `pendingViewEvents`. Ao aceitar, `flushPendingViews()` dispara uma vez cada evento pendente. Se o usuário recusar, os pendentes são descartados.
+
+## Guarda de inicialização do Pinterest
+
+`pinterestInitialized` impede execução duplicada:
+
+- Máximo 1 `loadPinterestTag()` → 1 `<script>` inserido
+- Máximo 1 `pintrk("load", tagId)`
+- Máximo 1 `pintrk("page")`
+- Máximo 1 `pintrk("track", "pagevisit")`
+- Abrir preferências e aceitar novamente não duplica comandos
+
+## Eventos desconhecidos
+
+`trackEvent()` rejeita eventos fora da whitelist com status `"invalid_event"`. No modo debug, aparecem como `[ANALYTICS] IGNORADO (evento inválido): ...`. Não lançam erro.
 
 ## Debug Mode
 
-Adicione `?analytics_debug=1` à URL para ativar logs no console:
+Ativado exclusivamente por `?analytics_debug=1` (via `URLSearchParams`, não `indexOf`).
+
+- `?not_analytics_debug=1` → **não** ativa
+- `?analytics_debug=10` → **não** ativa
+- `?x=analytics_debug=1` → **não** ativa
+
+Log de exemplo:
 
 ```
-[ANALYTICS] ENVIADO: click_primary_cta {"cta_location":"hero","section_name":"hero"} 2026-07-29T...
-[ANALYTICS] BLOQUEADO (consentimento): view_pricing {}
+[ANALYTICS] ENVIADO: click_primary_cta {"cta_location":"hero","section_name":"hero","page_path":"/","device_group":"desktop"} 2026-07-29T...
+[ANALYTICS] BLOQUEADO (consentimento): view_pricing {"section_name":"final_offer",...}
+[ANALYTICS] IGNORADO (evento inválido): Checkout {}
 ```
 
-## Regras de Negócio
+## Riscos e validação humana
 
-1. A landing page **não** dispara `Checkout`, `Purchase`, `AddToCart` ou `addToCart` — esses eventos pertencem exclusivamente ao checkout da Kiwify.
-2. Nenhum evento é disparado antes do consentimento do usuário.
-3. `begin_checkout` é o único evento com dados de produto (`value`, `currency`, `product_id`, `product_name`) e é enviado apenas no CTA `final_offer`.
-4. `initiatecheckout` não é mais disparado pela landing page (consolidado em `begin_checkout`).
-5. Todos os CTAs de compra usam `data-checkout` com `href` dinâmico apontando para a Kiwify.
-6. O parâmetro `section_name` é adicionado a todos os eventos de visualização para análise de profundidade de rolagem.
-7. O evento `open_faq` inclui `faq_id` para identificar qual pergunta foi aberta.
+- **Duplicidade com Kiwify**: confirmar quais eventos (`Checkout`, `Purchase`, `InitiateCheckout`) a Kiwify já dispara. `begin_checkout` da landing não deve ser mapeado como Checkout concluído.
+- **Pinterest Tag Helper**: validar disparos no navegador.
+- **Event History**: verificar no Pinterest Ads se `begin_checkout` aparece corretamente e nenhum `Checkout` ou `Purchase` é registrado pela landing.
+- **Eventos customizados**: `click_primary_cta`, `click_mid_page_cta`, etc. podem precisar de mapeamento manual no painel do Pinterest se forem usados para otimização.
 
 ## Procedimentos de Teste
 
-1. Abra a página com `?analytics_debug=1` e verifique no console se `pagevisit` é disparado.
-2. Role até cada seção e confirme os eventos `view_*` correspondentes.
-3. Clique em cada CTA e verifique o evento correto + parâmetros.
-4. Verifique que CTAs sem `data-cta-location` (ex: footer) **não** disparam eventos.
-5. Abra e feche perguntas do FAQ; confirme que `open_faq` dispara apenas ao abrir.
-6. Teste com consentimento negado: nenhum evento deve aparecer.
-7. Teste com UTMs na URL (`?utm_source=google&utm_medium=cpc`) e confirme que são repassadas ao checkout e incluídas nos eventos de CTA.
+1. Abrir página com `?analytics_debug=1` → `pagevisit` no console
+2. Rolar até cada seção → `view_*` correspondentes (1x cada)
+3. Clicar em cada CTA → evento correto + `cta_location`, `section_name`, `page_path`, `device_group`, UTMs planas
+4. Footer "Acessar o kit" → **nenhum** evento de CTA
+5. FAQ: abrir → `open_faq` com `faq_id` e `faq_position`; fechar → zero eventos; trocar → exatamente 1 evento
+6. Preço: visualizar → `view_pricing`; clicar → nenhum evento adicional
+7. Suporte: e-mail no footer e no bloco de segurança → `click_support_email` (1 por clique); WhatsApp → `click_support_whatsapp`; e-mail não enviado no payload
+8. Consentimento negado → nenhum evento; aceitar → eventos pendentes liberados; aceitar novamente → sem duplicação
+9. `localStorage` bloqueado → banner funcional, decisão não persiste, página não quebra
+10. `sessionStorage` bloqueado → CTA móvel funcional, fechamento não persiste, página não quebra
+11. UTMs: `?utm_source=pinterest&utm_medium=paid` → `utm_source: "pinterest"`, `utm_medium: "paid"` no payload e no checkout
+12. UTMs case-insensitive: `?UTM_SOURCE=Instagram` → `utm_source: "Instagram"`
+13. `?email=teste@example.com` → **não** chega ao checkout
+14. `?not_analytics_debug=1` → debug inativo
