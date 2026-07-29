@@ -56,6 +56,7 @@ Ordem das seções:
 - A página não utiliza rastreamento publicitário ou banner de cookies.
 - Manter navegação por teclado, foco visível, contraste e textos alternativos.
 - Não publicar com campos obrigatórios vazios em `config.js`.
+- Jamais usar o domínio `suportt.com` ou o e-mail `naildesigner@suportt.com` — é um endereço fictício não verificado. Até que um e-mail real seja configurado, `supportEmail` deve permanecer vazio (`""`).
 
 ## Identidade visual
 

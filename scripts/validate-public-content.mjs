@@ -82,6 +82,16 @@ const patterns = [
   /analytics_debug[^=]+===\s*-1/,
   // Analytics: parsed[key] direto para pageUtms (sem sanitizeUtmValue)
   /pageUtms\[key\]\s*=\s*parsed\[key\]/,
+  // E-mail de suporte não verificado
+  /naildesigner@suportt\.com/i,
+  /@suportt\.com/i,
+  // E-mail fictício em supportEmail
+  /supportEmail["']?\s*:\s*["'][^"']*@example\.com["']/i,
+  /supportEmail["']?\s*:\s*["'][^"']*@exemplo\.com["']/i,
+  /supportEmail["']?\s*:\s*["'][^"']*e-?mail[^"']*["']/i,
+  // Placeholder de e-mail
+  /e-?mail\s+a\s+definir/i,
+  // mailto vazio (HTML only — verificação em scanFile)
 ];
 
 function scanFile(filePath) {
@@ -129,6 +139,12 @@ function scanFile(filePath) {
     var storageMethods = content.match(/(localStorage|sessionStorage)\.\s*(getItem|setItem)\s*\(/g);
     if (storageMethods && storageMethods.length) {
       console.error(`ERRO: Acesso direto a storage encontrado em ${filePath}: ${storageMethods.length} ocorrência(s)`);
+      found = true;
+    }
+    // HTML files must not have empty mailto: links
+    var emptyMailto = content.match(/href\s*=\s*["']mailto:["']/i);
+    if (emptyMailto) {
+      console.error(`ERRO: mailto vazio encontrado em ${filePath}`);
       found = true;
     }
   }
