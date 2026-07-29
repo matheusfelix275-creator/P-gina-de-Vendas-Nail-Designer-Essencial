@@ -307,6 +307,78 @@ button {
   max-width: 540px;
 }
 
+.header__cta {
+  min-height: 40px;
+  padding: 8px 20px;
+  font-size: .78rem;
+  letter-spacing: .04em;
+}
+
+.hero__benefits {
+  display: grid;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.hero__benefits li {
+  position: relative;
+  padding-left: 24px;
+  color: var(--warm);
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.hero__benefits li::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 0;
+  width: 14px;
+  height: 2px;
+  background: var(--graphite);
+}
+
+.hero__format-notice {
+  margin-top: var(--space-sm);
+  color: var(--warm-light);
+  font-size: .8rem;
+}
+
+.trust-bar {
+  padding: var(--space-lg) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--white);
+}
+
+.trust-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg) var(--space-xl);
+  justify-content: center;
+}
+
+.trust-bar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--warm-light);
+  font-size: .85rem;
+  white-space: nowrap;
+}
+
+.trust-bar__icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--graphite);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .hero__price {
   margin-bottom: var(--space-md);
   font-family: "Fraunces", Georgia, serif;
@@ -1273,6 +1345,9 @@ button {
   .hero__visual {
     min-height: 380px;
   }
+  .trust-bar__inner {
+    gap: var(--space-md) var(--space-lg);
+  }
   .collections__grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1317,6 +1392,17 @@ button {
   }
   .trust__contact {
     justify-items: center;
+  }
+  .trust-bar__inner {
+    gap: var(--space-sm) var(--space-md);
+    justify-content: flex-start;
+  }
+  .trust-bar__item {
+    white-space: normal;
+    font-size: .82rem;
+  }
+  .header__cta {
+    display: none;
   }
 }
 
@@ -1421,6 +1507,12 @@ button {
   }
   .hero__subheadline {
     font-size: .95rem;
+  }
+  .hero__benefits li {
+    font-size: .88rem;
+  }
+  .hero__format-notice {
+    font-size: .75rem;
   }
   .hero__price {
     font-size: clamp(2rem, 7vw, 2.5rem);
