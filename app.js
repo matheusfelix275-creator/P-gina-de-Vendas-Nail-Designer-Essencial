@@ -90,9 +90,21 @@ import "./config.js";
 
   /* Tracking keys and checkout */
   var trackingKeys = [
-    "src", "sck", "utm_source", "utm_medium", "utm_campaign",
-    "utm_term", "utm_content", "s1", "s2", "s3"
+    "utm_source", "utm_medium", "utm_campaign",
+    "utm_term", "utm_content"
   ];
+  var pageUtms = null;
+
+  function captureUtms() {
+    if (pageUtms) return pageUtms;
+    var qs = new URLSearchParams(window.location.search);
+    pageUtms = {};
+    trackingKeys.forEach(function (key) {
+      var val = qs.get(key);
+      if (val) pageUtms[key] = val;
+    });
+    return pageUtms;
+  }
   var notice = document.querySelector("[data-site-notice]");
   var noticeTimer;
 
@@ -125,20 +137,37 @@ import "./config.js";
     return target.toString();
   }
 
-  function fireInitiateCheckout() {
-    if (typeof pintrk !== "function") return;
-    pintrk("track", "initiatecheckout", {
-      value: 49.90,
-      order_quantity: 1,
-      currency: "BRL",
-      line_items: [{
-        product_name: "Kit Nail Designer Essencial",
-        product_id: "kit-nail-designer-essencial",
-        product_price: 49.90,
-        product_quantity: 1
-      }]
-    });
+  /* Analytics: central function */
+  var ANALYTICS_DEBUG = window.location.search.indexOf("analytics_debug=1") !== -1;
+
+  function logAnalytics(action, eventName, data) {
+    if (!ANALYTICS_DEBUG) return;
+    var time = new Date().toISOString();
+    console.log("[ANALYTICS] " + action + ": " + eventName, JSON.stringify(data || {}), time);
   }
+
+  function trackEvent(eventName, data) {
+    if (getConsent() !== "granted") {
+      logAnalytics("BLOQUEADO (consentimento)", eventName, data);
+      return;
+    }
+    if (typeof pintrk !== "function") {
+      logAnalytics("BLOQUEADO (pintrk ausente)", eventName, data);
+      return;
+    }
+    var payload = data || {};
+    pintrk("track", eventName, payload);
+    logAnalytics("ENVIADO", eventName, payload);
+  }
+
+  /* CTA event mapping */
+  var ctaEventMap = {
+    header: "click_primary_cta",
+    hero: "click_primary_cta",
+    mid_page: "click_mid_page_cta",
+    final_offer: "begin_checkout",
+    sticky_mobile: "click_sticky_cta"
+  };
 
   document.querySelectorAll("[data-checkout]").forEach(function (link) {
     link.setAttribute("rel", "noopener noreferrer");
@@ -153,39 +182,66 @@ import "./config.js";
         return;
       }
       link.href = target;
-      if (getConsent() === "granted" && typeof pintrk === "function") {
-        fireInitiateCheckout();
+
+      var location = link.getAttribute("data-cta-location") || "";
+      var eventName = ctaEventMap[location];
+      if (!eventName) return;
+
+      var utms = captureUtms();
+      var data = {
+        cta_location: location,
+        section_name: location === "header" || location === "hero" ? "hero" : location
+      };
+      if (location === "final_offer") {
+        data.value = config.price;
+        data.currency = config.currency;
+        data.product_id = config.productId;
+        data.product_name = config.productName;
       }
+      if (Object.keys(utms).length) data.utms = utms;
+      trackEvent(eventName, data);
     });
   });
 
-  /* Analytics */
-  function fireAnalyticsEvent(eventName, data) {
-    if (getConsent() !== "granted" || typeof pintrk !== "function") return;
-    pintrk("track", eventName, data || {});
-  }
-
+  /* Generic data-analytics listener (non-CTA: FAQ, nav links, etc.) */
   document.querySelectorAll("[data-analytics]").forEach(function (el) {
+    if (el.hasAttribute("data-checkout")) return;
     var eventName = el.getAttribute("data-analytics");
     if (!eventName) return;
     el.addEventListener("click", function () {
-      fireAnalyticsEvent(eventName);
+      trackEvent(eventName);
     });
   });
 
+  /* View events via IntersectionObserver */
   if (typeof IntersectionObserver !== "undefined") {
-    var pricingEls = document.querySelectorAll("[data-analytics=\"view_pricing\"]");
-    if (pricingEls.length) {
-      var pricingObserver = new IntersectionObserver(function (entries) {
+    var viewConfigs = [
+      { selector: "[data-analytics=\"view_pricing\"]", event: "view_pricing", threshold: 0.5, section: "final_offer" },
+      { selector: ".section--content", event: "view_product_contents", threshold: 0.3, section: "content" },
+      { selector: ".section--collections", event: "view_collections", threshold: 0.3, section: "collections" },
+      { selector: ".section--spreadsheets", event: "view_spreadsheets", threshold: 0.3, section: "spreadsheets" }
+    ];
+
+    viewConfigs.forEach(function (cfg) {
+      var els;
+      if (cfg.selector.indexOf("[data-analytics") === 0) {
+        els = document.querySelectorAll(cfg.selector);
+      } else {
+        var el = document.querySelector(cfg.selector);
+        els = el ? [el] : [];
+      }
+      if (!els.length) return;
+      var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            fireAnalyticsEvent("view_pricing");
-            pricingObserver.unobserve(entry.target);
+            var data = { section_name: cfg.section };
+            observer.unobserve(entry.target);
+            trackEvent(cfg.event, data);
           }
         });
-      }, { threshold: 0.5 });
-      pricingEls.forEach(function (el) { pricingObserver.observe(el); });
-    }
+      }, { threshold: cfg.threshold });
+      els.forEach(function (el) { observer.observe(el); });
+    });
   }
 
   function escapeHtml(str) {
@@ -266,49 +322,41 @@ import "./config.js";
         var currentPanel = currentPanelId ? document.getElementById(currentPanelId) : null;
         btn.setAttribute("aria-expanded", "true");
         if (currentPanel) currentPanel.removeAttribute("hidden");
-        fireAnalyticsEvent("open_faq");
+        trackEvent("open_faq", { faq_id: btn.getAttribute("aria-controls") });
       }
     });
   });
 
-  /* New analytics events: view_guarantee, view_final_offer */
+  /* View guarantee and final offer */
   if (typeof IntersectionObserver !== "undefined") {
-    var guaranteeEl = document.querySelector(".section--guarantee");
-    if (guaranteeEl) {
-      var guaranteeObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            fireAnalyticsEvent("view_guarantee");
-            guaranteeObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.3 });
-      guaranteeObserver.observe(guaranteeEl);
-    }
+    var remainingViews = [
+      { el: document.querySelector(".section--guarantee"), event: "view_guarantee", section: "guarantee" },
+      { el: document.querySelector(".section--checkout"), event: "view_final_offer", section: "final_offer" }
+    ];
 
-    var finalOfferEl = document.querySelector(".section--checkout");
-    if (finalOfferEl) {
-      var offerObserver = new IntersectionObserver(function (entries) {
+    remainingViews.forEach(function (cfg) {
+      if (!cfg.el) return;
+      var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            fireAnalyticsEvent("view_final_offer");
-            offerObserver.unobserve(entry.target);
+            observer.unobserve(entry.target);
+            trackEvent(cfg.event, { section_name: cfg.section });
           }
         });
       }, { threshold: 0.3 });
-      offerObserver.observe(finalOfferEl);
-    }
+      observer.observe(cfg.el);
+    });
   }
 
   /* Footer: click_terms, click_privacy */
   Array.from(document.querySelectorAll("a[href*='termos-de-uso']")).forEach(function (link) {
     link.addEventListener("click", function () {
-      fireAnalyticsEvent("click_terms");
+      trackEvent("click_terms");
     });
   });
   Array.from(document.querySelectorAll("a[href*='politica-de-privacidade']")).forEach(function (link) {
     link.addEventListener("click", function () {
-      fireAnalyticsEvent("click_privacy");
+      trackEvent("click_privacy");
     });
   });
 

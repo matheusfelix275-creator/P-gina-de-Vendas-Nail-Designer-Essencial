@@ -51,6 +51,21 @@ const patterns = [
   /suporte\s*a\s*definir/i,
   // Headings vazios (single-line)
   /<h[1-6][^>]*>\s*<\/h[1-6]>/i,
+  // Analytics: eventos Pinterest proibidos na landing
+  /pintrk\s*\(\s*["']track["']\s*,\s*["']Checkout["']/i,
+  /pintrk\s*\(\s*["']track["']\s*,\s*["']Purchase["']/i,
+  /pintrk\s*\(\s*["']track["']\s*,\s*["']AddToCart["']/i,
+  /pintrk\s*\(\s*["']track["']\s*,\s*["']addToCart["']/i,
+  /pintrk\s*\(\s*["']track["']\s*,\s*["']initiatecheckout["']/i,
+  // Tracking keys legados (src, sck) no array trackingKeys
+  /trackingKeys\s*=\s*\[[^\]]*?["']src["'][^\]]*?\]/i,
+  /trackingKeys\s*=\s*\[[^\]]*?["']sck["'][^\]]*?\]/i,
+  // E-mail capturado na landing (proibido)
+  /campo\s*[dD]e\s*[eE]-?mail/i,
+  /input[^>]*type=["']?email["']?/i,
+  /newsletter/i,
+  // Href="#" em CTAs
+  /data-checkout[^>]*href\s*=\s*["']#["'][^>]*>/i,
 ];
 
 function scanFile(filePath) {
