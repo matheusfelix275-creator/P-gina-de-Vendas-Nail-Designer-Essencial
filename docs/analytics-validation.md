@@ -66,14 +66,15 @@
 ### Cache de sessão
 
 - Chave: `kn_campaign_utms_v1` em `sessionStorage`
-- UTMs da URL atual são salvas quando presentes
-- Quando a URL atual não tem UTMs, recupera da sessão
-- Dados validados novamente ao recuperar
+- Salvo somente quando a URL atual contém pelo menos uma UTM com valor não vazio após sanitização
+- UTMs vazias (`?utm_campaign=`) não salvam nem apagam o cache
+- URL sem UTMs: recupera o cache da sessão
+- Valores recuperados do cache passam novamente por `sanitizeUtmValue()` (controle de caracteres, trim, limite de 200 caracteres)
 - `sessionStorage` indisponível: UTMs preservadas em memória apenas
 
 ### Repasse ao checkout
 
-`buildCheckoutUrl()` usa exclusivamente `captureUtms()` como fonte. Parâmetros existentes na `checkoutUrl` não são sobrescritos. `analytics_debug` nunca é repassado.
+`buildCheckoutUrl()` usa exclusivamente `captureUtms()` como fonte. Parâmetros já existentes na `checkoutUrl` têm prioridade: uma UTM nunca substitui um parâmetro com o mesmo nome já presente na URL configurada. `analytics_debug` nunca é repassado.
 
 ## Payload dos eventos
 
@@ -116,7 +117,13 @@ Todos os acessos a `localStorage` e `sessionStorage` usam wrappers `try/catch`:
 
 ### Eventos vistos antes do consentimento
 
-Seções observadas por IntersectionObserver antes do aceite são registradas em `pendingViewEvents`. Ao aceitar, `flushPendingViews()` dispara uma vez cada evento pendente. Se o usuário recusar, os pendentes são descartados.
+Seções observadas por IntersectionObserver antes do aceite são registradas em `pendingViewEvents`. Ao aceitar, `flushPendingViews()` dispara uma vez cada evento pendente.
+
+Ao recusar:
+- `pendingViewEvents` é limpo imediatamente
+- Nenhum evento pendente é enviado
+- Aceitar depois da recusa, na mesma página, **não** recupera visualizações anteriores à recusa
+- Apenas novas visualizações posteriores ao aceite são contabilizadas
 
 ## Guarda de inicialização do Pinterest
 

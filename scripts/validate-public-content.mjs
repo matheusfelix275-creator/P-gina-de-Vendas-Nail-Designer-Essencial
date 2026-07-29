@@ -80,6 +80,8 @@ const patterns = [
   /["']utms["']\s*:/i,
   // Analytics: debug por substring (deve usar URLSearchParams)
   /analytics_debug[^=]+===\s*-1/,
+  // Analytics: parsed[key] direto para pageUtms (sem sanitizeUtmValue)
+  /pageUtms\[key\]\s*=\s*parsed\[key\]/,
 ];
 
 function scanFile(filePath) {
@@ -127,6 +129,15 @@ function scanFile(filePath) {
     var storageMethods = content.match(/(localStorage|sessionStorage)\.\s*(getItem|setItem)\s*\(/g);
     if (storageMethods && storageMethods.length) {
       console.error(`ERRO: Acesso direto a storage encontrado em ${filePath}: ${storageMethods.length} ocorrência(s)`);
+      found = true;
+    }
+  }
+  // buildCheckoutUrl: searchParams.set deve ser precedido por has(key) check
+  if (filePath.endsWith("app.js")) {
+    var setCount = (content.match(/\.searchParams\.set\s*\(/g) || []).length;
+    var hasCount = (content.match(/\.searchParams\.has\s*\(/g) || []).length;
+    if (setCount > 0 && hasCount === 0) {
+      console.error(`ERRO: app.js contém searchParams.set (${setCount}x) sem searchParams.has`);
       found = true;
     }
   }

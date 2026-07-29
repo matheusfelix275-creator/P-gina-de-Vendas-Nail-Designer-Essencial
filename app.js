@@ -107,7 +107,7 @@ import "./config.js";
     if (pageUtms) return pageUtms;
     pageUtms = {};
     var qs = new URLSearchParams(window.location.search);
-    var hasUtmInUrl = false;
+    var hasValidUtmInUrl = false;
 
     trackingKeys.forEach(function (key) {
       var raw = qs.get(key);
@@ -119,13 +119,15 @@ import "./config.js";
         });
       }
       if (raw !== null) {
-        hasUtmInUrl = true;
         var sanitized = sanitizeUtmValue(raw);
-        if (sanitized) pageUtms[key] = sanitized;
+        if (sanitized) {
+          pageUtms[key] = sanitized;
+          hasValidUtmInUrl = true;
+        }
       }
     });
 
-    if (hasUtmInUrl) {
+    if (hasValidUtmInUrl) {
       safeSessionStorageSet(UTM_CACHE_KEY, JSON.stringify(pageUtms));
     } else {
       var cached = safeSessionStorageGet(UTM_CACHE_KEY);
@@ -135,8 +137,9 @@ import "./config.js";
           if (typeof parsed === "object" && parsed !== null) {
             pageUtms = {};
             trackingKeys.forEach(function (key) {
-              if (typeof parsed[key] === "string" && parsed[key]) {
-                pageUtms[key] = parsed[key];
+              if (typeof parsed[key] === "string") {
+                var sanitized = sanitizeUtmValue(parsed[key]);
+                if (sanitized) pageUtms[key] = sanitized;
               }
             });
           }
@@ -176,7 +179,9 @@ import "./config.js";
     var target = new URL(config.checkoutUrl);
     var utms = captureUtms();
     trackingKeys.forEach(function (key) {
-      if (utms[key]) target.searchParams.set(key, utms[key]);
+      if (utms[key] && !target.searchParams.has(key)) {
+        target.searchParams.set(key, utms[key]);
+      }
     });
     return target.toString();
   }
@@ -326,6 +331,7 @@ import "./config.js";
   if (denyBtn) {
     denyBtn.addEventListener("click", function () {
       setConsent("denied");
+      pendingViewEvents = {};
       hideBanner();
       if (pinterestInitialized) {
         window.location.reload();
