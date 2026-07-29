@@ -249,40 +249,24 @@ import "./config.js";
   }
 
   /* FAQ accordion */
-  document.querySelectorAll(".faq__question").forEach(function (btn) {
+  var faqButtons = document.querySelectorAll(".faq__question");
+  faqButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var expanded = btn.getAttribute("aria-expanded") === "true";
-      btn.setAttribute("aria-expanded", String(!expanded));
-      var answerId = btn.getAttribute("aria-controls");
-      var answer = answerId ? document.getElementById(answerId) : null;
-      if (!expanded) {
-        fireAnalyticsEvent("open_faq");
-      }
-      if (answer) {
-        if (expanded) {
-          answer.setAttribute("hidden", "");
-        } else {
-          answer.removeAttribute("hidden");
-        }
-      }
-    });
-  });
+      var wasExpanded = btn.getAttribute("aria-expanded") === "true";
 
-  /* FAQ: close other open answers */
-  document.querySelectorAll(".faq__question").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var expanded = btn.getAttribute("aria-expanded") === "true";
-      if (expanded) {
-        document.querySelectorAll(".faq__question").forEach(function (other) {
-          if (other !== btn && other.getAttribute("aria-expanded") === "true") {
-            other.setAttribute("aria-expanded", "false");
-            var aid = other.getAttribute("aria-controls");
-            if (aid) {
-              var oa = document.getElementById(aid);
-              if (oa) oa.setAttribute("hidden", "");
-            }
-          }
-        });
+      faqButtons.forEach(function (otherBtn) {
+        var panelId = otherBtn.getAttribute("aria-controls");
+        var panel = panelId ? document.getElementById(panelId) : null;
+        otherBtn.setAttribute("aria-expanded", "false");
+        if (panel) panel.setAttribute("hidden", "");
+      });
+
+      if (!wasExpanded) {
+        var currentPanelId = btn.getAttribute("aria-controls");
+        var currentPanel = currentPanelId ? document.getElementById(currentPanelId) : null;
+        btn.setAttribute("aria-expanded", "true");
+        if (currentPanel) currentPanel.removeAttribute("hidden");
+        fireAnalyticsEvent("open_faq");
       }
     });
   });
